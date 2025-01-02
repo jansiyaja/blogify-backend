@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.userRouter = void 0;
+const express_1 = __importDefault(require("express"));
+const userController_1 = __importDefault(require("../controllers/userController"));
+const authenticateToken_1 = require("../middleware/authenticateToken");
+const multerService_1 = require("../services/multerService");
+exports.userRouter = express_1.default.Router();
+exports.userRouter.post('/register', userController_1.default.createUser);
+exports.userRouter.post('/otp-verification', userController_1.default.verifyOTP);
+exports.userRouter.post('/login', userController_1.default.loginUser);
+exports.userRouter.post('/blog', authenticateToken_1.authenticateToken, multerService_1.uploadBlogData, userController_1.default.createBlog);
+exports.userRouter.get('/blog', multerService_1.uploadBlogData, userController_1.default.getAllblogs);
+exports.userRouter.get('/singleblog', authenticateToken_1.authenticateToken, userController_1.default.getSingleBlog);
+exports.userRouter.get('/usersblog', authenticateToken_1.authenticateToken, userController_1.default.getAllUserBlogs);
+exports.userRouter.post('/profile', authenticateToken_1.authenticateToken, multerService_1.uploadProfileImage, userController_1.default.updateProfile);
+exports.userRouter.post('/deleteBlog', authenticateToken_1.authenticateToken, userController_1.default.deleteBlog);
