@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import { userRouter } from "./Routes/userRoute";
 import cors from 'cors'
+import errorHandler from "./middleware/errorhandler";
 
 
 
@@ -20,7 +21,8 @@ app.use(express.json());
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
 
- app.use('/users', userRouter);
+app.use('/users', userRouter);
+ app.use(errorHandler)
 
 
 

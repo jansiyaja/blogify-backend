@@ -66,19 +66,29 @@ class BlogRepository {
     }
   }
 
-  async deleteBlog(id: number) {
-    try {
-      const deletedBlog = await prisma.blogPost.delete({
-        where: {
-          id,
-        },
-      });
-      return deletedBlog;
-    } catch (error) {
-      console.error('Error deleting blog:', error);
-      throw new Error('Error deleting blog');
+async deleteBlog(id: number) {
+  try {
+   
+    const blog = await prisma.blogPost.findUnique({
+      where: { id },
+    });
+
+
+    if (!blog) {
+      throw new Error("Blog post not found");
     }
+
+   
+    const deletedBlog = await prisma.blogPost.delete({
+      where: { id },
+    });
+    return deletedBlog;
+  } catch (error) {
+    console.error('Error deleting blog:', error);
+    throw new Error('Error deleting blog');
   }
+}
+
 
   async getAllBlogsByUser(authorId: number) {
     try {
