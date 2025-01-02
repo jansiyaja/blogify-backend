@@ -8,7 +8,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
     }
 
     async uploadImageToS3(buffer: Buffer, mimeType: string|undefined): Promise<string> {
-        console.log("image uploader");
+       
 
        
         if (!process.env.AWS_S3_BUCKET_NAME || !process.env.AWS_REGION) {
