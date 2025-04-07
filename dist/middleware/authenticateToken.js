@@ -19,7 +19,7 @@ const authenticateToken = async (req, res, next) => {
                 const decodedRefreshToken = jsonwebtoken_1.default.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || '');
                 const newAccessToken = (0, jwtService_1.generateAccessToken)(decodedRefreshToken.id);
                 res.status(200).json({ accessToken: newAccessToken });
-                req.user = { id: decodedRefreshToken.id };
+                req.user = { id: String(decodedRefreshToken.id) };
                 return next();
             }
             catch (error) {

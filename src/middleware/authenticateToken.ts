@@ -4,7 +4,7 @@ import { generateAccessToken } from '../services/jwtService';
 
 interface ExtendedRequest extends Request {
   user?: {
-    id: number;
+    id: string;
   };
 }
 
@@ -21,18 +21,21 @@ export const authenticateToken = async (
 
       if (!refreshToken) {
         res.status(401).json({ error: 'Access and Refresh tokens are required' });
-        return
+        return;
       }
 
       try {
         const decodedRefreshToken = jwt.verify(
           refreshToken,
           process.env.REFRESH_TOKEN_SECRET || ''
-        ) as { id: number };
+        ) as { id: string };
 
-        const newAccessToken = generateAccessToken(decodedRefreshToken.id);
+
+        const newAccessToken = generateAccessToken(decodedRefreshToken.id); 
+       
+
         res.status(200).json({ accessToken: newAccessToken });
-        req.user = { id: decodedRefreshToken.id };
+        req.user = { id: String(decodedRefreshToken.id) }; 
         return next();
       } catch (error) {
         res.status(403).json({ error: 'Invalid refresh token' });
@@ -41,7 +44,7 @@ export const authenticateToken = async (
     }
 
     const decoded = jwt.verify(tokenFromHeader, process.env.ACCESS_TOKEN_SECRET || '') as {
-      id: number;
+      id: string;
     };
 
     req.user = { id: decoded.id };
@@ -51,6 +54,6 @@ export const authenticateToken = async (
       res.status(401).json({ error: 'Invalid or expired access token' });
       return;
     }
-     res.status(500).json({ error: 'Unexpected server error' });
+    res.status(500).json({ error: 'Unexpected server error' });
   }
 };
