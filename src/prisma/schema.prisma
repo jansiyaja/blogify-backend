@@ -61,3 +61,4 @@ enum BlogStatus {
   PUBLISHED
   ARCHIVED
 }
+

@@ -1,5 +1,6 @@
 import prisma from '../prisma/prismaClient';
-import { BlogStatus } from '@prisma/client'; 
+import { BlogStatus } from '@prisma/client';
+
 
 class BlogRepository {
   async createBlog(
@@ -8,7 +9,7 @@ class BlogRepository {
     tag: string,
     content: any,
     coverImageUrl: string,
-    status: BlogStatus 
+    status: BlogStatus
   ) {
     try {
       const newBlog = await prisma.blogPost.create({
