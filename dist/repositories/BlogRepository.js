@@ -90,7 +90,11 @@ class BlogRepository {
     }
     async getAllBlogs() {
         try {
-            const blogs = await prismaClient_1.default.blogPost.findMany({});
+            const blogs = await prismaClient_1.default.blogPost.findMany({
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            });
             return blogs;
         }
         catch (error) {

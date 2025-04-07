@@ -29,5 +29,5 @@ app.use('/users', userRouter);
 const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port} http://localhost:3000`);
+  console.log(`Server is running on port ${port} http://localhost:8000`);
 });

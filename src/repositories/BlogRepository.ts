@@ -103,15 +103,20 @@ async deleteBlog(id: number) {
       throw new Error('Error fetching user blogs');
     }
     }
-    async getAllBlogs() {
-    try {
-      const blogs = await prisma.blogPost.findMany({});
-      return blogs;
-    } catch (error) {
-      console.error('Error fetching user blogs:', error);
-      throw new Error('Error fetching user blogs');
-    }
+async getAllBlogs() {
+  try {
+    const blogs = await prisma.blogPost.findMany({
+      orderBy: {
+        createdAt: 'desc' 
+      }
+    });
+    return blogs;
+  } catch (error) {
+    console.error('Error fetching user blogs:', error);
+    throw new Error('Error fetching user blogs');
   }
+}
+
 }
 
 export default new BlogRepository();

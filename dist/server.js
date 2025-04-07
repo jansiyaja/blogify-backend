@@ -22,5 +22,5 @@ app.use('/users', userRoute_1.userRouter);
 app.use(errorhandler_1.default);
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-    console.log(`Server is running on port ${port} http://localhost:3000`);
+    console.log(`Server is running on port ${port} http://localhost:8000`);
 });
