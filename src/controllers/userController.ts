@@ -209,7 +209,7 @@ class UserController {
 
   async getSingleBlog(req: Request, res: Response) {
     const id = req.query.id ;
-   
+    console.log("single blog,")
 
     if (!id || typeof id !== "string") {
       throw res.status(400).json({ error: "Blog ID is required and must be a string." });
@@ -260,7 +260,7 @@ class UserController {
 
   async getAllUserBlogs(req: Request, res: Response) {
     const id = req.query.id as string | undefined;
-    console.log("id",id);
+    console.log("id");
     
 
     if (!id || typeof id !== "string") {

@@ -174,12 +174,12 @@ class UserController {
         }
     }
     async getSingleBlog(req, res) {
-        const idParam = req.query.id;
-        if (!idParam || typeof idParam !== "string") {
+        const id = req.query.id;
+        if (!id || typeof id !== "string") {
             throw res.status(400).json({ error: "Blog ID is required and must be a string." });
         }
         try {
-            const blog = await BlogRepository_1.default.getBlogById(idParam);
+            const blog = await BlogRepository_1.default.getBlogById(id);
             res.status(200).json(blog);
         }
         catch (error) {
@@ -217,12 +217,13 @@ class UserController {
         }
     }
     async getAllUserBlogs(req, res) {
-        const idParam = req.query.id;
-        if (!idParam || typeof idParam !== "string") {
+        const id = req.query.id;
+        console.log("id", id);
+        if (!id || typeof id !== "string") {
             throw res.status(400).json({ error: "User ID is required and must be a string." });
         }
         try {
-            const blogs = await BlogRepository_1.default.getAllBlogsByUser(idParam);
+            const blogs = await BlogRepository_1.default.getAllBlogsByUser(id);
             res.status(200).json(blogs);
         }
         catch (error) {

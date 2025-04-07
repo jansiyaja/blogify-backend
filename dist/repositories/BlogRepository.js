@@ -59,9 +59,16 @@ class BlogRepository {
     }
     async getBlogById(id) {
         try {
-            const blog = await BlogPost_1.default.findById(id);
-            if (!blog)
+            if (!mongoose_1.default.Types.ObjectId.isValid(id)) {
+                throw new Error('Invalid Blog ID format');
+            }
+            const objectId = new mongoose_1.default.Types.ObjectId(id);
+            const blog = await BlogPost_1.default.findById(objectId)
+                .populate('author', 'name email image')
+                .exec();
+            if (!blog) {
                 throw new Error('Blog not found');
+            }
             return blog;
         }
         catch (error) {
@@ -97,7 +104,14 @@ class BlogRepository {
     }
     async getAllBlogsByUser(authorId) {
         try {
-            return await BlogPost_1.default.find({ authorId: new mongoose_1.default.Types.ObjectId(authorId) });
+            if (!mongoose_1.default.Types.ObjectId.isValid(authorId)) {
+                throw new Error('Invalid authorId');
+            }
+            const blogs = await BlogPost_1.default.find({ author: (authorId) });
+            if (blogs.length === 0) {
+                console.log('No blogs found for this author');
+            }
+            return blogs;
         }
         catch (error) {
             console.error('Error fetching user blogs:', error);
