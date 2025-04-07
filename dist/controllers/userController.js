@@ -23,7 +23,7 @@ class UserController {
         try {
             const existingUser = await userRepository_1.default.checkUser(email);
             if (existingUser) {
-                res.status(400).json({ message: "Email already exists" });
+                throw res.status(400).json({ message: "Email already exists" });
             }
             const hashedPassword = await bcryptjs_1.default.hash(password, 10);
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -76,23 +76,22 @@ class UserController {
             const { email, password } = req.body;
             const existingUser = await userRepository_1.default.checkUser(email);
             if (!existingUser) {
-                res.status(401).json({ error: "User with this email does not exist" });
-                return;
+                throw res.status(401).json({ error: "User with this email does not exist" });
             }
             const isMatch = await bcryptjs_1.default.compare(password, existingUser.password);
             if (!isMatch) {
-                res.status(401).json({ error: "Invalid password" });
+                throw res.status(401).json({ error: "Invalid password" });
             }
-            const accessToken = (0, jwtService_1.generateAccessToken)(existingUser?.id);
-            const refreshToken = (0, jwtService_1.generateRefreshToken)(existingUser?.id);
+            const accessToken = (0, jwtService_1.generateAccessToken)(existingUser.id);
+            const refreshToken = (0, jwtService_1.generateRefreshToken)(existingUser.id);
             res.status(200).json({
                 message: "Login successful",
                 user: {
-                    id: existingUser?.id,
-                    email: existingUser?.email,
-                    name: existingUser?.name,
-                    image: existingUser?.image,
-                    about: existingUser?.about,
+                    id: existingUser.id,
+                    email: existingUser.email,
+                    name: existingUser.name,
+                    image: existingUser.image,
+                    about: existingUser.about,
                 },
                 tokens: {
                     accessToken,
@@ -111,20 +110,18 @@ class UserController {
         const mimeType = req.file?.mimetype.toString();
         try {
             if (!buffer || !mimeType) {
-                res.status(400).json({ error: "No image uploaded." });
-                return;
+                throw res.status(400).json({ error: "No image uploaded." });
             }
             const userId = req.user.id;
             if (!userId) {
-                console.log("no user");
+                throw res.status(400).json({ error: "User ID not found" });
             }
             const imageKey = await imageUploader.uploadImageToS3(buffer, mimeType);
             const blogStatus = BlogStatus[status.toUpperCase()];
             if (!blogStatus) {
-                res.status(400).json({ error: "Invalid blog status." });
-                return;
+                throw res.status(400).json({ error: "Invalid blog status." });
             }
-            const newBlogPost = await BlogRepository_1.default.createBlog(userId, heading, tag, content, imageKey, blogStatus);
+            const newBlogPost = await BlogRepository_1.default.createBlog(userId, heading, tag, content, imageKey, status);
             res.status(201).json({
                 message: "Blog post created successfully",
                 blogPost: newBlogPost,
@@ -139,14 +136,12 @@ class UserController {
         try {
             const userId = req.user.id;
             if (!userId) {
-                res.status(400).json({ error: "User ID not found" });
-                return;
+                throw res.status(400).json({ error: "User ID not found" });
             }
             const buffer = req.file?.buffer;
             const mimeType = req.file?.mimetype.toString();
             if (!buffer || !mimeType) {
-                res.status(400).json({ error: "No image uploaded." });
-                return;
+                throw res.status(400).json({ error: "No image uploaded." });
             }
             const image = await imageUploader.uploadImageToS3(buffer, mimeType);
             const data = { ...req.body, image };
@@ -168,20 +163,23 @@ class UserController {
             res.status(500).json({ error: "Error fetching users" });
         }
     }
-    async getAllblogs(req, res) {
+    async getAllBlogs(req, res) {
         try {
             const blogs = await BlogRepository_1.default.getAllBlogs();
             res.status(200).json(blogs);
         }
         catch (error) {
-            console.error("Error fetching users:", error);
-            res.status(500).json({ error: "Error fetching users" });
+            console.error("Error fetching blogs:", error);
+            res.status(500).json({ error: "Error fetching blogs" });
         }
     }
     async getSingleBlog(req, res) {
-        const id = Number(req.query.id);
+        const idParam = req.query.id;
+        if (!idParam || typeof idParam !== "string") {
+            throw res.status(400).json({ error: "Blog ID is required and must be a string." });
+        }
         try {
-            const blog = await BlogRepository_1.default.getBlogById(id);
+            const blog = await BlogRepository_1.default.getBlogById(idParam);
             res.status(200).json(blog);
         }
         catch (error) {
@@ -190,37 +188,46 @@ class UserController {
         }
     }
     async deleteBlog(req, res) {
-        const id = Number(req.query.id);
+        const id = req.query.id;
+        if (!id || typeof id !== "string") {
+            throw res.status(400).json({ error: "Blog ID is required and must be a string." });
+        }
         try {
             const blog = await BlogRepository_1.default.deleteBlog(id);
             res.status(200).json(blog);
         }
         catch (error) {
-            console.error("Error fetching blog:", error);
-            res.status(500).json({ error: "Error fetching blog" });
+            console.error("Error deleting blog:", error);
+            res.status(500).json({ error: "Error deleting blog" });
         }
     }
     async editBlog(req, res) {
-        const id = Number(req.query.id);
+        const id = req.query.id;
+        if (!id || typeof id !== "string") {
+            throw res.status(400).json({ error: "Blog ID is required and must be a string." });
+        }
         const { data } = req.body;
         try {
             const blog = await BlogRepository_1.default.updateBlog(id, data);
             res.status(200).json(blog);
         }
         catch (error) {
-            console.error("Error fetching blog:", error);
-            res.status(500).json({ error: "Error fetching blog" });
+            console.error("Error updating blog:", error);
+            res.status(500).json({ error: "Error updating blog" });
         }
     }
     async getAllUserBlogs(req, res) {
-        const id = Number(req.query.id);
+        const idParam = req.query.id;
+        if (!idParam || typeof idParam !== "string") {
+            throw res.status(400).json({ error: "User ID is required and must be a string." });
+        }
         try {
-            const blog = await BlogRepository_1.default.getAllBlogsByUser(id);
-            res.status(200).json(blog);
+            const blogs = await BlogRepository_1.default.getAllBlogsByUser(idParam);
+            res.status(200).json(blogs);
         }
         catch (error) {
-            console.error("Error fetching blog:", error);
-            res.status(500).json({ error: "Error fetching blog" });
+            console.error("Error fetching user's blogs:", error);
+            res.status(500).json({ error: "Error fetching user's blogs" });
         }
     }
 }

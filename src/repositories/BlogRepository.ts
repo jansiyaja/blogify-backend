@@ -1,65 +1,77 @@
-import prisma from '../prisma/prismaClient';
-import { BlogStatus } from '@prisma/client';
-
+import mongoose from 'mongoose';
+import BlogPost, { BlogStatus, IBlogPost } from '../Models/BlogPost';
 
 class BlogRepository {
   async createBlog(
-    authorId: number,
+    
+    author:string,
     heading: string,
     tag: string,
     content: any,
     coverImageUrl: string,
     status: BlogStatus
-  ) {
+  ): Promise<IBlogPost> {
     try {
-      const newBlog = await prisma.blogPost.create({
-        data: {
-          authorId,
-          heading,
-          tag,
-          content,
-          coverImageUrl,
-          status,
-        },
+     
+      const normalizedStatus = status ? status.toUpperCase() : BlogStatus.DRAFT;
+
+      const newBlog = new BlogPost({
+        author:author,
+        heading,
+        tag,
+        content,
+        coverImageUrl,
+        status: normalizedStatus,
       });
-      return newBlog;
+
+      return await newBlog.save();
     } catch (error) {
       console.error('Error creating blog:', error);
       throw new Error('Error creating blog');
     }
   }
 
-  async getBlogById(id: number) {
-    try {
-      const blog = await prisma.blogPost.findUnique({
-        where: {
-          id,
-        },
-      });
-      if (!blog) {
-        throw new Error('Blog not found');
-      }
-      return blog;
-    } catch (error) {
-      console.error('Error fetching blog:', error);
-      throw new Error('Error fetching blog');
-    }
-  }
 
-  async updateBlog(id: number, updatedData: Partial<{ 
-    heading?: string; 
-    tag?: string; 
-    content?: any; 
-    coverImageUrl?: string; 
-    status?: BlogStatus 
-  }>) {
+
+async getBlogById(id: string): Promise<IBlogPost> {
+  try {
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new Error('Invalid Blog ID format');
+    }
+ const objectId = new mongoose.Types.ObjectId(id);
+    const blog = await BlogPost.findById(objectId)
+      .populate('author', 'name email image')
+      .exec();
+
+    if (!blog) {
+      throw new Error('Blog not found');
+    }
+
+    return blog;
+  } catch (error) {
+    console.error('Error fetching blog:', error);
+    throw new Error('Error fetching blog');
+  }
+}
+
+
+
+  async updateBlog(
+    id: string,
+    updatedData: Partial<{
+      heading?: string;
+      tag?: string;
+      content?: any;
+      coverImageUrl?: string;
+      status?: BlogStatus;
+    }>
+  ): Promise<IBlogPost> {
     try {
-      const updatedBlog = await prisma.blogPost.update({
-        where: {
-          id,
-        },
-        data: updatedData,
+      const updatedBlog = await BlogPost.findByIdAndUpdate(id, updatedData, {
+        new: true,
       });
+      if (!updatedBlog) throw new Error('Blog not found');
       return updatedBlog;
     } catch (error) {
       console.error('Error updating blog:', error);
@@ -67,50 +79,30 @@ class BlogRepository {
     }
   }
 
-async deleteBlog(id: number) {
-  try {
-   
-    const blog = await prisma.blogPost.findUnique({
-      where: { id },
-    });
-
-
-    if (!blog) {
-      throw new Error("Blog post not found");
-    }
-
-   
-    const deletedBlog = await prisma.blogPost.delete({
-      where: { id },
-    });
-    return deletedBlog;
-  } catch (error) {
-    console.error('Error deleting blog:', error);
-    throw new Error('Error deleting blog');
-  }
-}
-
-
-  async getAllBlogsByUser(authorId: number) {
+  async deleteBlog(id: string): Promise<IBlogPost> {
     try {
-      const blogs = await prisma.blogPost.findMany({
-        where: {
-          authorId,
-        },
-      });
-      return blogs;
+      const deletedBlog = await BlogPost.findByIdAndDelete(id);
+      if (!deletedBlog) throw new Error('Blog not found');
+      return deletedBlog;
     } catch (error) {
-      console.error('Error fetching user blogs:', error);
-      throw new Error('Error fetching user blogs');
+      console.error('Error deleting blog:', error);
+      throw new Error('Error deleting blog');
     }
-    }
-async getAllBlogs() {
+  }
+
+async getAllBlogsByUser(authorId: string): Promise<IBlogPost[]> {
   try {
-    const blogs = await prisma.blogPost.findMany({
-      orderBy: {
-        createdAt: 'desc' 
-      }
-    });
+
+    if (!mongoose.Types.ObjectId.isValid(authorId)) {
+      throw new Error('Invalid authorId');
+    }
+    const blogs = await BlogPost.find({ author: (authorId) });
+
+  
+    if (blogs.length === 0) {
+      console.log('No blogs found for this author');
+    }
+
     return blogs;
   } catch (error) {
     console.error('Error fetching user blogs:', error);
@@ -118,6 +110,15 @@ async getAllBlogs() {
   }
 }
 
+
+  async getAllBlogs(): Promise<IBlogPost[]> {
+    try {
+      return await BlogPost.find().sort({ createdAt: -1 });
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+      throw new Error('Error fetching blogs');
+    }
+  }
 }
 
 export default new BlogRepository();

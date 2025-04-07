@@ -13,7 +13,7 @@ exports.userRouter.post('/register', userController_1.default.createUser);
 exports.userRouter.post('/otp-verification', userController_1.default.verifyOTP);
 exports.userRouter.post('/login', userController_1.default.loginUser);
 exports.userRouter.post('/blog', authenticateToken_1.authenticateToken, multerService_1.uploadBlogData, userController_1.default.createBlog);
-exports.userRouter.get('/blog', multerService_1.uploadBlogData, userController_1.default.getAllblogs);
+exports.userRouter.get('/blog', multerService_1.uploadBlogData, userController_1.default.getAllBlogs);
 exports.userRouter.get('/singleblog', authenticateToken_1.authenticateToken, userController_1.default.getSingleBlog);
 exports.userRouter.get('/usersblog', authenticateToken_1.authenticateToken, userController_1.default.getAllUserBlogs);
 exports.userRouter.post('/profile', authenticateToken_1.authenticateToken, multerService_1.uploadProfileImage, userController_1.default.updateProfile);

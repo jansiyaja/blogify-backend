@@ -9,7 +9,7 @@ userRouter.post('/register', userController.createUser);
 userRouter.post('/otp-verification', userController.verifyOTP);
 userRouter.post('/login', userController.loginUser);
 userRouter.post('/blog', authenticateToken, uploadBlogData, userController.createBlog);
-userRouter.get('/blog', uploadBlogData, userController.getAllblogs);
+userRouter.get('/blog', uploadBlogData, userController.getAllBlogs);
 userRouter.get('/singleblog', authenticateToken, userController.getSingleBlog);
 userRouter.get('/usersblog', authenticateToken, userController.getAllUserBlogs);
 userRouter.post('/profile', authenticateToken, uploadProfileImage,userController.updateProfile);

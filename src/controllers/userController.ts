@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
-
 import userRepository from "../repositories/userRepository";
 import { SMTPService } from "../services/smtpEmail";
 import {
@@ -28,13 +27,11 @@ class UserController {
     try {
       const existingUser = await userRepository.checkUser(email);
       if (existingUser) {
-        res.status(400).json({ message: "Email already exists" });
+        throw res.status(400).json({ message: "Email already exists" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-     
 
       const user = await userRepository.createUser(name, email, hashedPassword);
       if (!user || !user.email) {
@@ -75,8 +72,6 @@ class UserController {
 
   async verifyOTP(req: Request, res: Response) {
     try {
-    
-
       const { email, otp } = req.body;
 
       const user = await userRepository.verifyOtp(otp, email);
@@ -94,26 +89,25 @@ class UserController {
 
       const existingUser = await userRepository.checkUser(email);
       if (!existingUser) {
-        res.status(401).json({ error: "User with this email does not exist" });
-        return;
+        throw res.status(401).json({ error: "User with this email does not exist" });
       }
 
       const isMatch = await bcrypt.compare(password, existingUser.password);
       if (!isMatch) {
-        res.status(401).json({ error: "Invalid password" });
+        throw res.status(401).json({ error: "Invalid password" });
       }
 
-      const accessToken = generateAccessToken(existingUser?.id);
-      const refreshToken = generateRefreshToken(existingUser?.id);
+      const accessToken = generateAccessToken(existingUser.id);
+      const refreshToken = generateRefreshToken(existingUser.id);
 
       res.status(200).json({
         message: "Login successful",
         user: {
-          id: existingUser?.id,
-          email: existingUser?.email,
-          name: existingUser?.name,
-          image: existingUser?.image,
-          about: existingUser?.about,
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
+          image: existingUser.image,
+          about: existingUser.about,
         },
         tokens: {
           accessToken,
@@ -130,27 +124,22 @@ class UserController {
     const { heading, content, tag, status } = req.body;
     const buffer = req.file?.buffer;
     const mimeType = req.file?.mimetype.toString();
- 
 
     try {
       if (!buffer || !mimeType) {
-        res.status(400).json({ error: "No image uploaded." });
-        return;
+        throw res.status(400).json({ error: "No image uploaded." });
       }
 
       const userId = (req as any).user.id;
-
       if (!userId) {
-        console.log("no user");
+        throw res.status(400).json({ error: "User ID not found" });
       }
 
       const imageKey = await imageUploader.uploadImageToS3(buffer, mimeType);
 
       const blogStatus = BlogStatus[status.toUpperCase() as BlogStatusType];
-
       if (!blogStatus) {
-        res.status(400).json({ error: "Invalid blog status." });
-        return;
+        throw res.status(400).json({ error: "Invalid blog status." });
       }
 
       const newBlogPost = await BlogRepository.createBlog(
@@ -159,7 +148,7 @@ class UserController {
         tag,
         content,
         imageKey,
-        blogStatus
+        status
       );
 
       res.status(201).json({
@@ -171,39 +160,32 @@ class UserController {
       res.status(500).json({ error: "Failed to create blog post" });
     }
   }
-   
 
+  async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user.id;
+      if (!userId) {
+        throw  res.status(400).json({ error: "User ID not found" });
+      }
 
+      const buffer = req.file?.buffer;
+      const mimeType = req.file?.mimetype.toString();
 
-async updateProfile(req: Request, res: Response): Promise<void> {
-  try {
-    const userId = (req as any).user.id;
-    if (!userId) {
-    
-      res.status(400).json({ error: "User ID not found" });
-      return
+      if (!buffer || !mimeType) {
+        throw res.status(400).json({ error: "No image uploaded." });
+      }
+
+      const image = await imageUploader.uploadImageToS3(buffer, mimeType);
+      const data = { ...req.body, image };
+
+      await userRepository.updateUser(userId, data);
+
+      res.status(200).json({ message: 'Profile updated successfully' });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "Error updating profile" });
     }
-
-    const buffer = req.file?.buffer;
-    const mimeType = req.file?.mimetype.toString();
-
-    if (!buffer || !mimeType) {
-      res.status(400).json({ error: "No image uploaded." });
-      return
-    }
-
-    const image = await imageUploader.uploadImageToS3(buffer, mimeType);
-    const data = { ...req.body, image };
-
-    
-    await userRepository.updateUser(userId, data);
-
-   res.status(200).json({ message: 'Profile updated successfully' });
-  } catch (error) {
-    console.error("Error updating profile:", error);
-    res.status(500).json({ error: "Error updating profile" });
   }
-}
 
   async getAllUsers(req: Request, res: Response) {
     try {
@@ -214,67 +196,83 @@ async updateProfile(req: Request, res: Response): Promise<void> {
       res.status(500).json({ error: "Error fetching users" });
     }
   }
-  async getAllblogs(req: Request, res: Response) {
+
+  async getAllBlogs(req: Request, res: Response) {
     try {
       const blogs = await BlogRepository.getAllBlogs();
-
       res.status(200).json(blogs);
     } catch (error) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({ error: "Error fetching users" });
+      console.error("Error fetching blogs:", error);
+      res.status(500).json({ error: "Error fetching blogs" });
     }
   }
-  async getSingleBlog(req: Request, res: Response) {
-    const id = Number(req.query.id);
 
+  async getSingleBlog(req: Request, res: Response) {
+    const id = req.query.id ;
+   
+
+    if (!id || typeof id !== "string") {
+      throw res.status(400).json({ error: "Blog ID is required and must be a string." });
+    }
 
     try {
       const blog = await BlogRepository.getBlogById(id);
-     
       res.status(200).json(blog);
     } catch (error) {
       console.error("Error fetching blog:", error);
       res.status(500).json({ error: "Error fetching blog" });
     }
   }
+
   async deleteBlog(req: Request, res: Response) {
-    const id = Number(req.query.id);
- 
+    const id = req.query.id as string | undefined;
+
+    if (!id || typeof id !== "string") {
+      throw res.status(400).json({ error: "Blog ID is required and must be a string." });
+    }
 
     try {
       const blog = await BlogRepository.deleteBlog(id);
-     
       res.status(200).json(blog);
     } catch (error) {
-      console.error("Error fetching blog:", error);
-      res.status(500).json({ error: "Error fetching blog" });
+      console.error("Error deleting blog:", error);
+      res.status(500).json({ error: "Error deleting blog" });
     }
   }
+
   async editBlog(req: Request, res: Response) {
-    const id = Number(req.query.id);
+    const id = req.query.id as string | undefined;
 
-    const {data } =req.body
+    if (!id || typeof id !== "string") {
+      throw res.status(400).json({ error: "Blog ID is required and must be a string." });
+    }
+
+    const { data } = req.body;
 
     try {
-      const blog = await BlogRepository.updateBlog(id,data);
-     
+      const blog = await BlogRepository.updateBlog(id, data);
       res.status(200).json(blog);
     } catch (error) {
-      console.error("Error fetching blog:", error);
-      res.status(500).json({ error: "Error fetching blog" });
+      console.error("Error updating blog:", error);
+      res.status(500).json({ error: "Error updating blog" });
     }
   }
+
   async getAllUserBlogs(req: Request, res: Response) {
-    const id = Number(req.query.id);
-   
+    const id = req.query.id as string | undefined;
+    console.log("id",id);
+    
+
+    if (!id || typeof id !== "string") {
+      throw res.status(400).json({ error: "User ID is required and must be a string." });
+    }
 
     try {
-      const blog = await BlogRepository.getAllBlogsByUser(id);
-    
-      res.status(200).json(blog);
+      const blogs = await BlogRepository.getAllBlogsByUser(id);
+      res.status(200).json(blogs);
     } catch (error) {
-      console.error("Error fetching blog:", error);
-      res.status(500).json({ error: "Error fetching blog" });
+      console.error("Error fetching user's blogs:", error);
+      res.status(500).json({ error: "Error fetching user's blogs" });
     }
   }
 }

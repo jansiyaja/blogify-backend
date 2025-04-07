@@ -3,24 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const prismaClient_1 = __importDefault(require("../prisma/prismaClient"));
+const User_1 = __importDefault(require("../Models/User"));
+const Otp_1 = __importDefault(require("../Models/Otp"));
 class UserRepository {
     async createUser(name, email, password) {
         try {
-            const existingUser = await prismaClient_1.default.user.findUnique({
-                where: { email },
-            });
+            const existingUser = await User_1.default.findOne({ email });
             if (existingUser) {
                 throw new Error('Email is already taken');
             }
-            const user = await prismaClient_1.default.user.create({
-                data: {
-                    name,
-                    email,
-                    password,
-                },
-            });
-            return user;
+            const user = new User_1.default({ name, email, password });
+            return await user.save();
         }
         catch (error) {
             console.error('Error creating user:', error);
@@ -29,14 +22,11 @@ class UserRepository {
     }
     async getAllUsers() {
         try {
-            const users = await prismaClient_1.default.user.findMany({
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    password: true,
-                    createdAt: true,
-                },
+            const users = await User_1.default.find({}, {
+                name: 1,
+                email: 1,
+                password: 1,
+                createdAt: 1,
             });
             return users;
         }
@@ -47,10 +37,7 @@ class UserRepository {
     }
     async checkUser(email) {
         try {
-            const user = await prismaClient_1.default.user.findUnique({
-                where: { email },
-            });
-            return user;
+            return await User_1.default.findOne({ email });
         }
         catch (error) {
             console.error('Error checking user:', error);
@@ -59,31 +46,21 @@ class UserRepository {
     }
     async createOTP(email, otp) {
         try {
-            const newOTP = await prismaClient_1.default.otp.create({
-                data: {
-                    email,
-                    otp,
-                },
-            });
-            console.log('OTP created:', newOTP);
-            return newOTP;
+            const newOtp = new Otp_1.default({ email, otp });
+            const savedOtp = await newOtp.save();
+            console.log('OTP created:', savedOtp);
+            return savedOtp;
         }
         catch (error) {
             console.error('Error creating OTP:', error);
-            throw error;
+            throw new Error('Error creating OTP');
         }
     }
     async verifyOtp(email, otp) {
         try {
-            const otpRecord = await prismaClient_1.default.otp.findFirst({
-                where: {
-                    email,
-                    otp,
-                },
-            });
-            if (!otpRecord) {
+            const otpRecord = await Otp_1.default.findOne({ email, otp });
+            if (!otpRecord)
                 throw new Error('Invalid OTP or email');
-            }
             return otpRecord;
         }
         catch (error) {
@@ -93,15 +70,9 @@ class UserRepository {
     }
     async loginUser(email, otp) {
         try {
-            const otpRecord = await prismaClient_1.default.otp.findFirst({
-                where: {
-                    email,
-                    otp,
-                },
-            });
-            if (!otpRecord) {
+            const otpRecord = await Otp_1.default.findOne({ email, otp });
+            if (!otpRecord)
                 throw new Error('Invalid OTP or email');
-            }
             return otpRecord;
         }
         catch (error) {
@@ -111,12 +82,9 @@ class UserRepository {
     }
     async updateUser(id, updatedData) {
         try {
-            const updatedUser = await prismaClient_1.default.user.update({
-                where: {
-                    id,
-                },
-                data: updatedData,
-            });
+            const updatedUser = await User_1.default.findByIdAndUpdate(id, updatedData, { new: true });
+            if (!updatedUser)
+                throw new Error('User not found');
             return updatedUser;
         }
         catch (error) {

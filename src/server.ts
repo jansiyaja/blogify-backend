@@ -4,6 +4,7 @@ import express from "express";
 import { userRouter } from "./Routes/userRoute";
 import cors from 'cors'
 import errorHandler from "./middleware/errorhandler";
+import connectDB from "./config/db";
 
 
 
@@ -11,7 +12,7 @@ dotenv.config();
 const app = express()
 app.use(express.json()); 
 
-
+connectDB();
   console.log(process.env.FRONTEND_URL);
 
   app.use(cors({
